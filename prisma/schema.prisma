@@ -1,0 +1,235 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum ScheduleType {
+  LECTURE
+  PRACTICE
+  LAB
+}
+
+enum WeekParity {
+  ALL
+  EVEN
+  ODD
+}
+
+enum AssignmentType {
+  HOMEWORK
+  PROJECT
+  TEST
+  EXAM
+}
+
+enum MaterialType {
+  LECTURE_NOTES
+  PRESENTATION
+  BOOK
+  VIDEO
+}
+
+enum SubmissionStatus {
+  NOT_SUBMITTED
+  SUBMITTED
+  CHECKED
+  RETURNED
+}
+
+model User {
+  id            Int              @id @default(autoincrement())
+  email         String           @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  role          UserRole
+  avatarUrl     String?
+  groupId       Int?
+  departmentId  Int?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  
+  group         Group?           @relation(fields: [groupId], references: [id])
+  department    Department?      @relation(fields: [departmentId], references: [id])
+  submissions   Submission[]
+  posts         ForumPost[]
+  comments      Comment[]
+  taughtCourses Course[]         @relation("CourseTeacher")
+  curatedGroups Group[]          @relation("GroupCurator")
+  headedDepartments Department[] @relation("DepartmentHead")
+  uploadedMaterials CourseMaterial[]
+}
+
+model Group {
+  id        Int        @id @default(autoincrement())
+  name      String
+  year      Int
+  faculty   String
+  specialty String
+  curatorId Int?
+  
+  students  User[]     @relation(fields: [id], references: [groupId])
+  curator   User?      @relation("GroupCurator", fields: [curatorId], references: [id])
+  schedules Schedule[]
+  
+  @@unique([name, year])
+}
+
+model Department {
+  id      Int      @id @default(autoincrement())
+  name    String
+  faculty String
+  headId  Int?
+  
+  teachers User[]  @relation(fields: [id], references: [departmentId])
+  head     User?   @relation("DepartmentHead", fields: [headId], references: [id])
+  courses  Course[]
+}
+
+model Course {
+  id          Int               @id @default(autoincrement())
+  name        String
+  code        String
+  description String?
+  credits     Int
+  semester    Int
+  teacherId   Int
+  departmentId Int
+  
+  teacher     User              @relation("CourseTeacher", fields: [teacherId], references: [id])
+  department  Department        @relation(fields: [departmentId], references: [id])
+  assignments Assignment[]
+  materials   CourseMaterial[]
+  schedules   Schedule[]
+  forumPosts  ForumPost[]
+  
+  @@unique([code, semester])
+}
+
+model Schedule {
+  id          Int         @id @default(autoincrement())
+  courseId    Int
+  groupId     Int
+  dayOfWeek   DayOfWeek
+  startTime   String
+  endTime     String
+  room        String
+  type        ScheduleType
+  weekParity  WeekParity
+  
+  course      Course      @relation(fields: [courseId], references: [id])
+  group       Group       @relation(fields: [groupId], references: [id])
+  
+  @@index([courseId])
+  @@index([groupId])
+  @@unique([groupId, dayOfWeek, startTime, weekParity])
+}
+
+model Assignment {
+  id             Int            @id @default(autoincrement())
+  courseId       Int
+  title          String
+  description    String?
+  deadline       DateTime
+  maxScore       Int            @default(100)
+  assignmentType AssignmentType
+  fileUrl        String?
+  createdAt      DateTime       @default(now())
+  
+  course         Course         @relation(fields: [courseId], references: [id])
+  submissions    Submission[]
+  
+  @@index([courseId])
+  @@index([deadline])
+}
+
+model Submission {
+  id             Int              @id @default(autoincrement())
+  assignmentId   Int
+  studentId      Int
+  content        String?
+  fileUrl        String?
+  submittedAt    DateTime         @default(now())
+  score          Int?
+  teacherComment String?
+  status         SubmissionStatus @default(NOT_SUBMITTED)
+  
+  assignment     Assignment       @relation(fields: [assignmentId], references: [id])
+  student        User             @relation(fields: [studentId], references: [id])
+  
+  @@unique([assignmentId, studentId])
+  @@index([assignmentId])
+  @@index([studentId])
+  @@index([status])
+}
+
+model CourseMaterial {
+  id           Int          @id @default(autoincrement())
+  courseId     Int
+  uploadedById Int
+  title        String
+  description  String?
+  fileUrl      String
+  type         MaterialType
+  createdAt    DateTime     @default(now())
+  
+  course       Course       @relation(fields: [courseId], references: [id])
+  uploadedBy   User         @relation(fields: [uploadedById], references: [id])
+  
+  @@index([courseId])
+  @@index([uploadedById])
+}
+
+model ForumPost {
+  id        Int       @id @default(autoincrement())
+  courseId  Int
+  authorId  Int
+  title     String
+  content   String
+  isPinned  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  course    Course    @relation(fields: [courseId], references: [id])
+  author    User      @relation(fields: [authorId], references: [id])
+  comments  Comment[]
+  
+  @@index([courseId])
+  @@index([authorId])
+  @@index([isPinned])
+}
+
+model Comment {
+  id        Int       @id @default(autoincrement())
+  postId    Int
+  authorId  Int
+  content   String
+  createdAt DateTime  @default(now())
+  
+  post      ForumPost @relation(fields: [postId], references: [id])
+  author    User      @relation(fields: [authorId], references: [id])
+  
+  @@index([postId])
+  @@index([authorId])
+}
