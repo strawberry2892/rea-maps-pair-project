@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .button-group {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 15px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .form-group {
+            margin: 10px 0;
+        }
+
+        input {
+            padding: 8px;
+            width: 200px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎓 Student Management System</h1>
+
+        <div class="button-group">
+            <button onclick="testAPI()">Тест API</button>
+            <button onclick="getUsers()">Получить пользователей</button>
+            <button onclick="getGroups()">Получить группы</button>
+            <button onclick="getCourses()">Получить курсы</button>
+            <button onclick="getSchedules()">Получить расписание</button>
+            <button onclick="getAssignments()">Получить задания</button>
+        </div>
+
+        <h3>Создать пользователя:</h3>
+        <div class="form-group">
+            <input id="userEmail" placeholder="Email">
+            <input id="userPassword" placeholder="Пароль" type="password">
+            <input id="userFirstName" placeholder="Имя">
+            <input id="userLastName" placeholder="Фамилия">
+            <select id="userRole">
+                <option value="STUDENT">Студент</option>
+                <option value="TEACHER">Преподаватель</option>
+                <option value="ADMIN">Админ</option>
+            </select>
+            <button onclick="createUser()">Создать пользователя</button>
+        </div>
+
+        <h3>Создать группу:</h3>
+        <div class="form-group">
+            <input id="groupName" placeholder="Название группы">
+            <input id="groupYear" placeholder="Год" type="number">
+            <input id="groupFaculty" placeholder="Факультет">
+            <input id="groupSpecialty" placeholder="Специальность">
+            <button onclick="createGroup()">Создать группу</button>
+        </div>
+
+        <div id="result" class="result">
+            Результат появится здесь...
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+
+        function displayResult(data) {
+            document.getElementById('result').innerHTML =
+                `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+
+        async function testAPI() {
+            try {
+                const response = await fetch(`${API_URL}/test`);
+                const data = await response.json();
+                displayResult(data);
+            } catch (error) {
+                displayResult({ error: error.toString() });
+            }
+        }
+
+        async function getUsers() {
+            const response = await fetch(`${API_URL}/users`);
+            const data = await response.json();
+            displayResult(data);
+        }
+
+        async function getGroups() {
+            const response = await fetch(`${API_URL}/groups`);
+            const data = await response.json();
+            displayResult(data);
+        }
+
+        async function getCourses() {
+            const response = await fetch(`${API_URL}/courses`);
+            const data = await response.json();
+            displayResult(data);
+        }
+
+        async function getSchedules() {
+            const response = await fetch(`${API_URL}/schedules`);
+            const data = await response.json();
+            displayResult(data);
+        }
+
+        async function getAssignments() {
+            const response = await fetch(`${API_URL}/assignments`);
+            const data = await response.json();
+            displayResult(data);
+        }
+
+        async function createUser() {
+            const userData = {
+                email: document.getElementById('userEmail').value,
+                passwordHash: document.getElementById('userPassword').value,
+                firstName: document.getElementById('userFirstName').value,
+                lastName: document.getElementById('userLastName').value,
+                role: document.getElementById('userRole').value
+            };
+
+            const response = await fetch(`${API_URL}/users`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(userData)
+            });
+            const data = await response.json();
+            displayResult(data);
+        }
+
+        async function createGroup() {
+            const groupData = {
+                name: document.getElementById('groupName').value,
+                year: document.getElementById('groupYear').value,
+                faculty: document.getElementById('groupFaculty').value,
+                specialty: document.getElementById('groupSpecialty').value
+            };
+
+            const response = await fetch(`${API_URL}/groups`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(groupData)
+            });
+            const data = await response.json();
+            displayResult(data);
+        }
+
+        // Автотест при загрузке
+        window.onload = testAPI;
+    </script>
+</body>
+
+</html>
